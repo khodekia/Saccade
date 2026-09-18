@@ -1,0 +1,7 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Toncoin (TON) logo: white gem/diamond mark on the brand-blue disc. -->
+  <circle cx="16" cy="16" r="16" fill="#0098EA"/>
+  <path d="M10 9h12l4.5 5.5L16 24.5 5.5 14.5z" fill="#fff"/>
+  <path d="M7.6 14h16.8l-8.4 9.3z" fill="#0098EA"/>
+  <path d="M10 9l3.2 5h5.6l3.2-5z" fill="#0098EA" fill-opacity="0.35"/>
+</svg>

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Packaging output (built by packaging/*.sh)
+packaging/build/
+packaging/dist/
+packaging/.tools/
+packaging/aur/*.pkg.tar.*
+packaging/aur/src/
+packaging/aur/pkg/
+packaging/aur/saccade-*.tar.gz
+
+# Smoke test output
+screenshots/
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store

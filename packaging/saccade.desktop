@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Saccade
+GenericName=PDF Reader
+Comment=Read PDF books with bionic-reading fixations
+TryExec=saccade
+Exec=saccade %f
+Icon=saccade
+Terminal=false
+Categories=Office;Viewer;
+Keywords=pdf;book;reader;bionic;speed reading;ebook;fixations;
+MimeType=application/pdf;
+StartupWMClass=saccade
+StartupNotify=true

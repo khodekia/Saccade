@@ -1,0 +1,40 @@
+# Maintainer: Kiavash <https://github.com/khodekia>
+# NOTE before uploading to the AUR:
+#   1. Tag a v0.9.1 release, then replace 'SKIP' in sha256sums with the
+#      real checksum of the release tarball
+#      (makepkg -g >> PKGBUILD prints it for you).
+
+pkgname=saccade
+pkgver=0.9.1
+pkgrel=1
+pkgdesc="Read PDF books with bionic-reading fixations (bold word beginnings guide your eye)"
+arch=(any)
+url="https://github.com/khodekia/saccade"
+license=(MIT)
+depends=(python python-pyqt6 python-pymupdf)
+makedepends=(python-build python-installer python-setuptools python-wheel)
+optdepends=('poppler-utils: pdftotext fallback text engine'
+            'python-pypdf: pypdf fallback text engine')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "$pkgname-$pkgver"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  # Installs the python package and the /usr/bin/saccade launcher
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # Desktop integration
+  install -Dm644 packaging/saccade.desktop \
+      "$pkgdir/usr/share/applications/saccade.desktop"
+  install -Dm644 packaging/saccade.svg \
+      "$pkgdir/usr/share/icons/hicolor/scalable/apps/saccade.svg"
+  install -Dm644 README.md \
+      "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 LICENSE \
+      "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
