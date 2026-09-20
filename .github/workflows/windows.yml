@@ -1,0 +1,89 @@
+name: Windows build
+
+# Runs on a real Windows machine, because a Windows executable cannot be
+# built from Linux. Tag a release (v0.9.1) to get an installer attached to it,
+# or start this by hand from the Actions tab to test a change first.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Saccade and PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install . pyinstaller
+
+      - name: Read the version
+        id: version
+        shell: bash
+        run: |
+          version=$(python -c "import saccade; print(saccade.__version__)")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Building Saccade $version"
+
+      - name: Check it imports before freezing it
+        run: python -c "import saccade, saccade.layout, saccade.document; print('imports OK')"
+
+      - name: Build the executable
+        run: >
+          pyinstaller
+          --name Saccade
+          --windowed
+          --noconfirm
+          --clean
+          --icon packaging/windows/saccade.ico
+          --add-data "saccade/assets;saccade/assets"
+          --collect-all pymupdf
+          packaging/windows/saccade-launcher.py
+
+      - name: Smoke-test the frozen build
+        shell: bash
+        run: |
+          # --version exits immediately, so it proves the bundle starts and
+          # that Qt and PyMuPDF loaded, without needing a desktop session.
+          ./dist/Saccade/Saccade.exe --version || {
+            echo "the frozen executable failed to start"; exit 1; }
+
+      - name: Install Inno Setup
+        # Not part of the runner image, and the requests to add it are still
+        # open, so it is installed rather than assumed.
+        run: choco install innosetup --no-progress -y
+
+      - name: Build the installer
+        run: |
+          $iscc = Get-ChildItem -Path `
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", `
+            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe" `
+            -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $iscc) { throw "ISCC.exe not found after installing Inno Setup" }
+          & $iscc.FullName /DAppVersion=${{ steps.version.outputs.version }} `
+            packaging\windows\saccade.iss
+
+      - name: Keep the build for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: saccade-windows-${{ steps.version.outputs.version }}
+          path: |
+            dist/Saccade-*-setup.exe
+            dist/Saccade/
+          retention-days: 14
+
+      - name: Attach the installer to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Saccade-*-setup.exe
