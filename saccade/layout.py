@@ -908,7 +908,11 @@ _MATH_STACK_EM = 0.45
 #: Tallest a formula may be, in lines of body text, before it is not believed.
 _MATH_MAX_LINES = 5.0
 #: How far above/below a fraction bar its numerator and denominator sit (ems).
-_MATH_FRACTION_EM = 1.6
+_MATH_FRACTION_EM = 1.1
+#: Widest a line may be, as a fraction of the page, and still be a fraction bar.
+_MATH_RULE_MAX_WIDTH = 0.45
+#: How far two baselines may differ (ems) and still count as the same line.
+_MATH_BASELINE_EM = 0.55
 
 #: ``(x0, y0, x1, y1), css_px_per_pt, pad_top_pt, pad_bottom_pt ->
 #: (image src, width_px, height_px)``. The caller renders at the screen's own
@@ -1026,12 +1030,21 @@ def _overlap(a0: float, a1: float, b0: float, b1: float) -> float:
     return max(0.0, min(a1, b1) - max(a0, b0)) / shorter if shorter > 0 else 0.0
 
 
-def _side_by_side(a: Span, b: Span) -> bool:
+def _side_by_side(a: Span, b: Span, body: float = 0.0) -> bool:
     size = max(a.size, b.size)
-    return (
-        _overlap(a.top, a.bottom, b.top, b.bottom) > 0.3
-        and max(a.x0, b.x0) - min(a.x1, b.x1) <= _MATH_GAP_EM * size
-    )
+    if _overlap(a.top, a.bottom, b.top, b.bottom) <= 0.3:
+        return False
+    if max(a.x0, b.x0) - min(a.x1, b.x1) > _MATH_GAP_EM * size:
+        return False
+    # Consecutive lines overlap slightly, because a span's box includes the
+    # ascender and descender. Without a baseline test, the small fragments of
+    # a numbered exercise list chain down a whole column and the crop swallows
+    # the prose between the exercises. Scripts sit about half a line off the
+    # baseline, so they still pass; the next line does not.
+    if body > 0 and a.ink_y0 is None and b.ink_y0 is None:
+        if a.origin_y is not None and b.origin_y is not None:
+            return abs(a.origin_y - b.origin_y) <= _MATH_BASELINE_EM * body
+    return True
 
 
 def _baseline(span: Span) -> float:
@@ -1059,7 +1072,8 @@ def _stacked(small: Span, other: Span) -> bool:
     )
 
 
-def _math_regions(spans, body: float, rules=()) -> tuple[dict[int, int], dict[int, list]]:
+def _math_regions(spans, body: float, rules=(), page_width: float = 0.0
+                  ) -> tuple[dict[int, int], dict[int, list]]:
     """Map span index -> formula id, plus the rules each formula contains."""
     fonts = _body_fonts(spans)
     eligible = [
@@ -1083,13 +1097,14 @@ def _math_regions(spans, body: float, rules=()) -> tuple[dict[int, int], dict[in
         i for i in eligible
         if _small(spans[i], body)
         and any(
-            _side_by_side(spans[i], base) or _script_of(spans[i], base) for base in full_size
+            _side_by_side(spans[i], base, body) or _script_of(spans[i], base)
+            for base in full_size
         )
     }
     for pos, a in enumerate(eligible):
         for b in eligible[pos + 1:]:
             sa, sb = spans[a], spans[b]
-            linked = _side_by_side(sa, sb)
+            linked = _side_by_side(sa, sb, body)
             if not linked:
                 for small, big, i in ((sa, sb, a), (sb, sa, b)):
                     if (
@@ -1105,21 +1120,36 @@ def _math_regions(spans, body: float, rules=()) -> tuple[dict[int, int], dict[in
                 parent[find(a)] = find(b)
 
     # A fraction bar binds what is written above it to what is written below.
+    # Pages are full of other thin horizontal lines -- the rule under a running
+    # head, table borders, footer separators -- so a line only counts as a
+    # fraction bar when it is short and has something on *both* sides of it.
     rule_of: dict[int, list] = {}
     for rule in rules:
         rx0, ry0, rx1, ry1 = rule
         ry = (ry0 + ry1) / 2.0
+        if page_width > 0 and (rx1 - rx0) > _MATH_RULE_MAX_WIDTH * page_width:
+            continue
+        # A fraction bar is drawn as wide as the wider of its two parts, so
+        # anything bound to it fits within the bar. A span that sticks far out
+        # belongs to the surrounding line, not to this fraction.
+        margin = 0.5 * body
         near = [
             i for i in eligible
-            if spans[i].x1 > rx0 - 1 and spans[i].x0 < rx1 + 1
+            if spans[i].x0 >= rx0 - margin and spans[i].x1 <= rx1 + margin
             and abs(spans[i].y_centre - ry) <= _MATH_FRACTION_EM * body
         ]
-        if len(near) < 2:
+        # Only the row directly above and the row directly below belong to
+        # this bar. Reaching further chains stacked fractions in an exercise
+        # list into one crop that then covers the text between them.
+        above = _rule_row([i for i in near if spans[i].y_centre < ry], spans, ry, body)
+        below = _rule_row([i for i in near if spans[i].y_centre > ry], spans, ry, body)
+        bound = above + below
+        if not above or not below:
             continue
-        root = find(near[0])
-        for i in near[1:]:
+        root = find(bound[0])
+        for i in bound[1:]:
             parent[find(i)] = root
-        rule_of.setdefault(find(near[0]), []).append(rule)
+        rule_of.setdefault(find(bound[0]), []).append(rule)
 
     groups: dict[int, list[int]] = {}
     for i in eligible:
@@ -1147,6 +1177,15 @@ def _plausible_formula(members: list[Span], body: float) -> bool:
     top = min(s.top for s in members)
     bottom = max(s.bottom for s in members)
     return bottom - top <= _MATH_MAX_LINES * body
+
+
+def _rule_row(candidates: list[int], spans, ry: float, body: float) -> list[int]:
+    """The single row of spans closest to a fraction bar, on one side of it."""
+    if not candidates:
+        return []
+    nearest = min(candidates, key=lambda i: abs(spans[i].y_centre - ry))
+    row = spans[nearest].y_centre
+    return [i for i in candidates if abs(spans[i].y_centre - row) <= 0.5 * body]
 
 
 def _formula_rect(members: list[Span], body: float, rules=()):
@@ -1188,7 +1227,8 @@ def flow_html(
     body, _scale, _px = _metrics(page, base_pt, body_pt)
     formulas = None
     if math_renderer is not None:
-        formulas = _Formulas(page.spans, body, float(base_pt), math_renderer, page.rules)
+        formulas = _Formulas(page.spans, body, float(base_pt), math_renderer,
+                             page.rules, page.width)
     rendered = (
         _paragraph_html(para, body, float(base_pt), bool(bionic_enabled),
                         float(intensity), formulas)
@@ -1201,10 +1241,10 @@ class _Formulas:
     """Formula crops of one page, emitted once each at their first span."""
 
     def __init__(self, spans, body: float, base_pt: float, renderer: MathRenderer,
-                 page_rules=()) -> None:
+                 page_rules=(), page_width: float = 0.0) -> None:
         index_of = {id(span): i for i, span in enumerate(spans)}
         spans = [_normalised(span, body) for span in spans]
-        regions, rules = _math_regions(spans, body, page_rules)
+        regions, rules = _math_regions(spans, body, page_rules, page_width)
         members: dict[int, list[Span]] = {}
         for i, root in regions.items():
             members.setdefault(root, []).append(spans[i])

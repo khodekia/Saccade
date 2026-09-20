@@ -308,3 +308,61 @@ class FormulaDetectionTests(unittest.TestCase):
         ]
         _html, calls = self.render(spans)
         self.assertEqual(calls, [])
+
+
+class RuleChainingTests(unittest.TestCase):
+    """Thin horizontal lines are everywhere on a page; only a few are fractions.
+
+    Both cases here were found by auditing several hundred pages of real
+    textbooks: they made crops swallow text, which the reader then saw twice --
+    once inside the formula image and once as stray words.
+    """
+
+    def render(self, spans, rules, width=430.0):
+        calls = []
+
+        def renderer(rect, px_per_pt, pad_top, pad_bottom):
+            calls.append(rect)
+            return ("formula", 10.0, 10.0)
+
+        page = PageLayout(width=width, height=800, spans=tuple(spans),
+                          rules=tuple(rules))
+        layout.flow_html(page, base_pt=12, body_pt=10, bionic_enabled=False,
+                         math_renderer=renderer)
+        return calls
+
+    def test_the_rule_under_a_running_head_is_not_a_fraction_bar(self) -> None:
+        """A page-wide line with text only above it rules off a header."""
+        spans = [
+            flow_span("224", font="CMR10", x0=73, y0=49),      # folio
+            flow_span("6.", font="CMSL10", x0=249, y0=49),     # section number
+            flow_span("Body text of the page.", font="CMR10", x0=73, y0=90),
+        ]
+        self.assertEqual(self.render(spans, [(73.0, 62.0, 432.0, 62.0)]), [])
+
+    def test_stacked_fractions_do_not_chain_into_one_crop(self) -> None:
+        """Two fractions listed one above the other stay two formulas."""
+        def fraction(y: float, x: float = 120.0) -> list[Span]:
+            return [
+                flow_span("1", font="CMMI10", x0=x, y0=y),
+                flow_span("2", font="CMMI10", x0=x, y0=y + 14),
+            ]
+        spans = fraction(100) + fraction(140)
+        rules = [(118.0, 112.0, 134.0, 112.0), (118.0, 152.0, 134.0, 152.0)]
+        self.assertEqual(len(self.render(spans, rules)), 2)
+
+    def test_a_bar_ignores_text_that_sticks_out_beyond_it(self) -> None:
+        """A sentence running past the bar is not part of the fraction."""
+        sentence = flow_span("and so on for every case", font="CMR10",
+                             x0=150, y0=106)
+        spans = [
+            flow_span("1", font="CMMI10", x0=120, y0=100),
+            flow_span("2", font="CMMI10", x0=120, y0=114),
+            sentence,
+        ]
+        rects = self.render(spans, [(118.0, 112.0, 134.0, 112.0)])
+        self.assertTrue(rects, "the fraction itself should still be cropped")
+        centre = ((sentence.x0 + sentence.x1) / 2.0, sentence.y_centre)
+        for x0, y0, x1, y1 in rects:
+            covers = x0 <= centre[0] <= x1 and y0 <= centre[1] <= y1
+            self.assertFalse(covers, "a crop must not cover the sentence beside it")
