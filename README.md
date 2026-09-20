@@ -61,8 +61,47 @@ reading in.
 
 ## Getting it
 
-You need Linux, Python 3.9 or newer, PyQt6 and PyMuPDF. The last two install
-themselves with the app.
+### Download and run
+
+No terminal, no Python, no coding. Go to the
+[Releases page](https://github.com/khodekia/saccade/releases) and download
+the file for your system:
+
+- **Debian, Ubuntu, Linux Mint and similar** — download the `.deb` file and
+  double-click it to install. If your file manager does not offer to install
+  it, open a terminal in the download folder and run:
+  ```bash
+  sudo apt install ./saccade_*_all.deb
+  ```
+- **Any other Linux distro** — download the `.AppImage` file, right-click it
+  and tick "Allow executing as program" (or run `chmod +x Saccade-*.AppImage`
+  in a terminal), then double-click it to run. It carries its own Qt and
+  PyMuPDF, so there is nothing else to install.
+- **Arch Linux** — see the AUR instructions below.
+
+### Arch Linux (AUR)
+
+Once it is on the AUR, any helper will do:
+
+```bash
+yay -S saccade
+```
+
+Or build it yourself from this repository:
+
+```bash
+cd packaging/aur
+makepkg -si
+```
+
+> **Before uploading to the AUR:** tag a `v0.9.1` release, put the release
+> tarball's real checksum in `sha256sums` (`makepkg -g` prints it), then
+> regenerate `.SRCINFO` with `makepkg --printsrcinfo > .SRCINFO`.
+
+### Building from source
+
+For developers: you need Linux, Python 3.9 or newer, PyQt6 and PyMuPDF. The
+last two install themselves with the app.
 
 ```bash
 git clone https://github.com/khodekia/saccade.git
@@ -78,35 +117,19 @@ While hacking on it, run it straight from the checkout instead:
 .venv/bin/python -m saccade
 ```
 
-### Arch Linux (AUR)
-
-```bash
-cd packaging/aur
-makepkg -si
-```
-
-Once it is on the AUR, any helper will do: `yay -S saccade`.
-
-> **Before uploading to the AUR:** tag a `v0.9.1` release, put the release
-> tarball's real checksum in `sha256sums` (`makepkg -g` prints it), then
-> regenerate `.SRCINFO` with `makepkg --printsrcinfo > .SRCINFO`.
-
-### Debian / Ubuntu
+### Building the .deb or AppImage yourself
 
 ```bash
 bash packaging/build_deb.sh
 sudo apt install ./packaging/dist/saccade_*_all.deb
 ```
 
-### AppImage (any distro)
-
 ```bash
 bash packaging/build_appimage.sh
 ./packaging/dist/Saccade-<version>-x86_64.AppImage
 ```
 
-It carries its own Qt and PyMuPDF, so nothing else needs installing. The build
-downloads `appimagetool` once.
+The AppImage build downloads `appimagetool` once.
 
 ## Using it
 
