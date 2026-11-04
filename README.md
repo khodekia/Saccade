@@ -26,6 +26,19 @@ reading in.
 > [Issues](https://github.com/khodekia/saccade/issues) — a screenshot and the
 > book's name is plenty.
 
+![A page in Saccade: the start of every word is bolded, with the chapter list beside it](docs/screenshots/reading.png)
+
+| Formulas as the book prints them | Focus mode |
+|---|---|
+| ![A fraction and an integral shown intact](docs/screenshots/formulas.png) | ![Every paragraph dimmed except the one being read](docs/screenshots/focus-mode.png) |
+
+| Night theme | Easy-reading setup |
+|---|---|
+| ![The same page on a dark background](docs/screenshots/night.png) | ![Larger text and wider spacing on a warm page](docs/screenshots/easy-reading.png) |
+
+These all come from [`docs/demo.pdf`](docs/demo.pdf), a three-page sample you can
+open in Saccade yourself.
+
 ## What it does
 
 **Makes the words easier to take in**
