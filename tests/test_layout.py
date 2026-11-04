@@ -366,3 +366,39 @@ class RuleChainingTests(unittest.TestCase):
         for x0, y0, x1, y1 in rects:
             covers = x0 <= centre[0] <= x1 and y0 <= centre[1] <= y1
             self.assertFalse(covers, "a crop must not cover the sentence beside it")
+
+
+class FormulaBoundaryTests(unittest.TestCase):
+    """What belongs inside a formula crop, and what stays readable text."""
+
+    def crops(self, spans):
+        calls = []
+
+        def renderer(rect, px_per_pt, pad_top, pad_bottom):
+            calls.append(rect)
+            return ("formula", 10.0, 10.0)
+
+        page = PageLayout(width=430, height=800, spans=tuple(spans))
+        html = layout.flow_html(page, base_pt=12, body_pt=10, bionic_enabled=False,
+                                math_renderer=renderer)
+        return html, calls
+
+    def test_one_symbol_does_not_turn_a_sentence_into_a_formula(self) -> None:
+        sentence = "for every x ∈ S, which is the point."
+        html, calls = self.crops([flow_span(sentence, font="Times-Roman")])
+        self.assertEqual(calls, [])
+        self.assertIn("which is the point", html)
+
+    def test_a_short_run_with_a_symbol_is_still_a_formula(self) -> None:
+        _html, calls = self.crops([flow_span("x ∈ S", font="Times-Roman")])
+        self.assertEqual(len(calls), 1)
+
+    def test_a_limit_overlapping_a_tall_operator_stays_with_it(self) -> None:
+        """The lower limit of an integral overlaps the sign's descender."""
+        operator = Span(text="∫", size=20, font="DejaVuSans", x0=228, x1=238,
+                        y0=299.4, y1=322.7, origin_y=318, block=0, line=0)
+        limit = Span(text="0", size=7, font="DejaVuSerif", x0=236, x1=240,
+                     y0=320.5, y1=328.6, origin_y=327, block=0, line=1)
+        html, calls = self.crops([operator, limit])
+        self.assertEqual(len(calls), 1)
+        self.assertNotIn(">0<", html)

@@ -981,8 +981,16 @@ def _math_core(span: Span, body_fonts: frozenset[str] = frozenset()) -> bool:
     text = span.text.strip()
     if not text:
         return False
-    if _is_math_font(span.font) or any(_is_math_char(c) for c in text):
+    if _is_math_font(span.font):
         return True
+    symbols = sum(1 for c in text if _is_math_char(c))
+    if symbols:
+        # One symbol does not make a sentence into a formula. Some books set a
+        # whole line -- "for every x in S, which is the point." -- as a single
+        # run, and cropping all of it would hide the sentence behind a picture
+        # of itself.
+        body_chars = len("".join(text.split()))
+        return len(text) <= _UNKNOWN_FONT_MAX_CHARS or symbols / body_chars >= 0.2
     return (
         span.font not in body_fonts
         and not _is_text_font(span.font)
@@ -1067,7 +1075,11 @@ def _stacked(small: Span, other: Span) -> bool:
         vgap = 0.0  # a limit tucked inside the glyph's own drawn height
     return (
         other.x0 - 1.0 <= centre <= other.x1 + 1.0
-        and 0.0 <= vgap + 0.3 * small.size
+        # A limit may sit well inside a tall operator's ink -- the lower limit
+        # of an integral overlaps its descender -- so only a deep overlap,
+        # which would mean the two are really on one line, disqualifies it.
+        # Scripts beside a base are ruled out before this is ever reached.
+        and vgap >= -0.6 * small.size
         and vgap <= _MATH_STACK_EM * other.size
     )
 
