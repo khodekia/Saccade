@@ -188,9 +188,14 @@ class ReadingView(QTextBrowser):
         content_width = max(self.viewport().width(), 1) + margins.left() + margins.right()
         spare = max(0, content_width - self._column_width)
         left = spare // 2
-        if (left, spare - left) == (margins.left(), margins.right()):
-            return
-        self.setViewportMargins(left, 0, spare - left, 0)
+        if (left, spare - left) != (margins.left(), margins.right()):
+            self.setViewportMargins(left, 0, spare - left, 0)
+        # Qt only re-wraps on a resize it delivers itself, and it skips the one
+        # caused by margins set while the window is first appearing. The text
+        # then stays as wide as the whole view, with its line ends cut off.
+        width = self.viewport().width()
+        if self.document().textWidth() != width:
+            self.document().setTextWidth(width)
 
     def resizeEvent(self, event) -> None:  # noqa: N802 (Qt naming)
         super().resizeEvent(event)

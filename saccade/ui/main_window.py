@@ -349,6 +349,10 @@ class MainWindow(QMainWindow):
         self.size_spin.setKeyboardTracking(False)
         self.size_spin.valueChanged.connect(self._on_font_size)
         bar.addWidget(self.size_spin)
+        # Qt 6.12 no longer passes a spin box's stylesheet padding to the field
+        # inside it, which leaves the number touching the border.
+        for spin in (self.page_spin, self.size_spin):
+            spin.lineEdit().setTextMargins(8, 0, 0, 0)
         bar.addSeparator()
 
         self.theme_combo = QComboBox(self)
