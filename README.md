@@ -61,7 +61,7 @@ reading in.
 
 ## Getting it
 
-You need Linux, Python 3.9 or newer, PyQt6 and PyMuPDF. The last two install
+You need Linux, Python 3.10 or newer, PyQt6 and PyMuPDF. The last two install
 themselves with the app.
 
 ```bash

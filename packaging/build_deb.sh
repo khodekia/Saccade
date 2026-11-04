@@ -31,7 +31,7 @@ Section: office
 Priority: optional
 Architecture: all
 Installed-Size: $INSTALLED_KB
-Depends: python3 (>= 3.9), python3-pyqt6, python3-fitz
+Depends: python3 (>= 3.10), python3-pyqt6, python3-fitz
 Recommends: poppler-utils
 Suggests: python3-pypdf
 Maintainer: Kiavash <kiavash@users.noreply.github.com>
