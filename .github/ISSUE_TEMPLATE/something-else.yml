@@ -1,0 +1,51 @@
+name: Something else is broken
+description: A crash, a setting that does not stick, a control that does nothing
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      placeholder: |
+        Focus mode stays on after I switch it off and reopen the app.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can I make it happen?
+      placeholder: |
+        1. Open any PDF
+        2. Press F2 twice
+        3. Close and reopen Saccade
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Saccade version
+      description: Help → About Saccade shows it.
+      placeholder: "0.9.1"
+    validations:
+      required: true
+
+  - type: input
+    id: system
+    attributes:
+      label: Distribution and desktop
+      placeholder: Arch, GNOME on Wayland
+    validations:
+      required: false
+
+  - type: textarea
+    id: terminal
+    attributes:
+      label: Anything printed in the terminal?
+      description: >
+        If you can, start it with `saccade` from a terminal and paste whatever
+        appears when the problem happens. This gets formatted as code.
+      render: shell
+    validations:
+      required: false

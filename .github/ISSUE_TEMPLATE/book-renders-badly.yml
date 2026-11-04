@@ -1,0 +1,61 @@
+name: A book renders badly
+description: Text out of order, a mangled formula, missing words, a wrong-looking page
+labels: ["rendering"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Rendering problems are nearly always
+        specific to how one publisher built their PDF, so the details below are
+        what make a report fixable.
+
+  - type: input
+    id: book
+    attributes:
+      label: Which book?
+      description: Title and publisher, or the file name. No need to share the file.
+      placeholder: Stewart, Calculus: Concepts and Contexts (Cengage, 2023)
+    validations:
+      required: true
+
+  - type: input
+    id: page
+    attributes:
+      label: Which page?
+      description: The page number shown in Saccade's toolbar.
+      placeholder: "272"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What looks wrong?
+      description: A screenshot of Saccade says more than a paragraph. Drag it in.
+      placeholder: |
+        The fraction under "Example 4" lost its bar, so it reads as a product.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Which mode?
+      description: The View menu shows whether "Keep the page layout" is ticked.
+      options:
+        - Normal (re-flowed text)
+        - Keep the page layout (Ctrl+L)
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: engine
+    attributes:
+      label: Status bar text
+      description: >
+        The bottom-right of the window, e.g. "547 words · PyMuPDF" or
+        "scanned page · no fixations". It names the text engine in use.
+      placeholder: 547 words · PyMuPDF
+    validations:
+      required: false
