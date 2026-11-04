@@ -15,6 +15,6 @@ pkgbase = saccade
 	optdepends = poppler-utils: pdftotext fallback text engine
 	optdepends = python-pypdf: pypdf fallback text engine
 	source = saccade-0.9.1.tar.gz::https://github.com/khodekia/Saccade/archive/v0.9.1.tar.gz
-	sha256sums = SKIP
+	sha256sums = ad2d1a1ae4bd754e57528b9e28dd46ab7139f802e02036d66c23bb40ad05b419
 
 pkgname = saccade
