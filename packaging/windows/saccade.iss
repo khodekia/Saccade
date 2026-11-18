@@ -24,6 +24,8 @@ DisableProgramGroupPage=yes
 ; Per-user install by default: no administrator password needed.
 PrivilegesRequiredOverridesAllowed=dialog
 PrivilegesRequired=lowest
+; Paths below are relative to the repository root, not to this script.
+SourceDir=..\..
 OutputDir=dist
 OutputBaseFilename=Saccade-{#AppVersion}-setup
 SetupIconFile=packaging\windows\saccade.ico
