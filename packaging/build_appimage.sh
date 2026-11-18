@@ -14,8 +14,10 @@ VERSION="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' saccade/__init__.py)"
 ARCH="$(uname -m)"
 APP="Saccade"
 TOOLS="packaging/.tools"
-APPDIR="packaging/build/${APP}.AppDir"
-DEPS="packaging/build/deps"
+BUILD="${BUILD_DIR:-packaging/build}"
+DIST="${DIST_DIR:-packaging/dist}"
+APPDIR="${BUILD}/${APP}.AppDir"
+DEPS="${BUILD}/deps"
 
 if [ "$ARCH" != "x86_64" ]; then
   echo "!! This script is written for x86_64 (detected: $ARCH)." >&2
@@ -57,8 +59,14 @@ if [ ! -f "$DEPS/.stamp" ]; then
   mkdir -p "$DEPS"
   PIPPY="python3"
   [ -x .venv/bin/python ] && PIPPY=".venv/bin/python"
-  "$PIPPY" -m pip install --quiet --upgrade --target "$DEPS" \
-      --no-compile --only-binary=:all: "PyQt6>=6.5" "PyMuPDF>=1.23" || {
+  # PyMuPDF 2.x requires an AI layout engine (onnxruntime, numpy, networkx,
+  # ...) and ships its models in pymupdf/layout. Saccade does its own layout
+  # and uses only the core, so it is installed without them: ~180 MB smaller.
+  { "$PIPPY" -m pip install --quiet --upgrade --target "$DEPS" \
+      --no-compile --only-binary=:all: "PyQt6>=6.5" &&
+    "$PIPPY" -m pip install --quiet --upgrade --target "$DEPS" \
+      --no-compile --only-binary=:all: --no-deps "PyMuPDF>=1.23" &&
+    rm -rf "$DEPS/pymupdf/layout" "$DEPS/pymupdf4llm"; } || {
     echo "!! Could not download the PyQt6/PyMuPDF wheels." >&2
     echo "!! Connect to the internet and re-run; or pre-fill $DEPS with" >&2
     echo "!! 'pip install --target $DEPS PyQt6 PyMuPDF' output." >&2
@@ -112,8 +120,8 @@ install -Dm644 packaging/saccade.svg \
 cp packaging/saccade.svg "$APPDIR/saccade.svg"
 
 # --- 5. build ------------------------------------------------------------- #
-mkdir -p packaging/dist
-OUT="packaging/dist/Saccade-${VERSION}-${ARCH}.AppImage"
+mkdir -p "$DIST"
+OUT="${DIST}/Saccade-${VERSION}-${ARCH}.AppImage"
 ARCH="$ARCH" "$APPIMAGETOOL" --appimage-extract-and-run \
   --no-appstream "$APPDIR" "$OUT" || \
 ARCH="$ARCH" "$APPIMAGETOOL" "$APPDIR" "$OUT"

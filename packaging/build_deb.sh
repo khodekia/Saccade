@@ -9,10 +9,12 @@ cd "$(dirname "$0")/.."
 VERSION="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' saccade/__init__.py)"
 PKG="saccade"
 DEBVER="${VERSION}-1"
-STAGE="packaging/build/${PKG}_${DEBVER}_all"
+BUILD="${BUILD_DIR:-packaging/build}"
+DIST="${DIST_DIR:-packaging/dist}"
+STAGE="${BUILD}/${PKG}_${DEBVER}_all"
 
 echo "==> Building ${PKG} ${DEBVER}"
-rm -rf packaging/build
+rm -rf "$BUILD"
 mkdir -p \
   "$STAGE/DEBIAN" \
   "$STAGE/usr/lib/python3/dist-packages" \
@@ -73,9 +75,9 @@ gzip -n -9 -c README.md > "$STAGE/usr/share/doc/$PKG/changelog.gz" 2>/dev/null |
 
 # --- validate + build --------------------------------------------------- #
 desktop-file-validate "$STAGE/usr/share/applications/saccade.desktop"
-mkdir -p packaging/dist
+mkdir -p "$DIST"
 fakeroot dpkg-deb --build --root-owner-group "$STAGE" \
-  "packaging/dist/${PKG}_${DEBVER}_all.deb"
+  "${DIST}/${PKG}_${DEBVER}_all.deb"
 
-echo "==> Done: packaging/dist/${PKG}_${DEBVER}_all.deb"
-dpkg-deb -I "packaging/dist/${PKG}_${DEBVER}_all.deb"
+echo "==> Done: ${DIST}/${PKG}_${DEBVER}_all.deb"
+dpkg-deb -I "${DIST}/${PKG}_${DEBVER}_all.deb"
