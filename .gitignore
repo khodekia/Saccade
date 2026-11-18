@@ -17,7 +17,7 @@ packaging/aur/pkg/
 packaging/aur/saccade-*.tar.gz
 
 # Smoke test output
-screenshots/
+/screenshots/
 
 # Editors / OS
 .idea/
