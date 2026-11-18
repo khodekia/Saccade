@@ -107,7 +107,7 @@ cd packaging/aur
 makepkg -si
 ```
 
-> **Before uploading to the AUR:** tag a `v0.9.1` release, put the release
+> **Before uploading to the AUR:** tag the release (`vX.Y.Z`), put its
 > tarball's real checksum in `sha256sums` (`makepkg -g` prints it), then
 > regenerate `.SRCINFO` with `makepkg --printsrcinfo > .SRCINFO`.
 
