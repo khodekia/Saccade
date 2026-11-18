@@ -1212,9 +1212,16 @@ def _formula_rect(members: list[Span], body: float, rules=()):
     for rx0, ry0, rx1, ry1 in rules:
         x0, x1 = min(x0, rx0 - 0.3), max(x1, rx1 + 0.3)
         y0, y1 = min(y0, ry0 - 0.5), max(y1, ry1 + 0.5)
-    full = [s for s in members if not _small(s, body)] or members
-    centres = sorted(s.y_centre for s in full)
-    mid = centres[len(centres) // 2]
+    if rules:
+        # The main fraction bar sits on the maths axis, which is the line the
+        # surrounding text is centred on. A median of the runs is not: a
+        # numerator split into "x", "+", "1" outvotes the line it sits on.
+        bar = max(rules, key=lambda r: r[2] - r[0])
+        mid = (bar[1] + bar[3]) / 2.0
+    else:
+        full = [s for s in members if not _small(s, body)] or members
+        centres = sorted(s.y_centre for s in full)
+        mid = centres[len(centres) // 2]
     above, below = mid - y0, y1 - mid
     half = max(above, below)
     return (x0, y0, x1, y1), half - above, half - below

@@ -367,6 +367,33 @@ class RuleChainingTests(unittest.TestCase):
             covers = x0 <= centre[0] <= x1 and y0 <= centre[1] <= y1
             self.assertFalse(covers, "a crop must not cover the sentence beside it")
 
+    def test_a_fraction_is_centred_on_its_bar(self) -> None:
+        """A numerator split into several runs must not pull the centre up.
+
+        The median of the runs landed in the numerator, so the crop was padded
+        with a blank band below the denominator as tall as the whole formula.
+        """
+        pads = []
+
+        def renderer(rect, px_per_pt, pad_top, pad_bottom):
+            pads.append((pad_top, pad_bottom))
+            return ("formula", 10.0, 10.0)
+
+        spans = [
+            flow_span("f(x) =", font="CMR10", x0=90, y0=106),
+            flow_span("x", font="CMMI10", x0=130, y0=99),
+            flow_span("+", font="CMR10", x0=138, y0=99),
+            flow_span("1", font="CMR10", x0=146, y0=99),
+            flow_span("x", font="CMMI10", x0=134, y0=113),
+        ]
+        page = PageLayout(width=430, height=800, spans=tuple(spans),
+                          rules=((128.0, 111.5, 154.0, 111.5),))
+        layout.flow_html(page, base_pt=12, body_pt=10, bionic_enabled=False,
+                         math_renderer=renderer)
+        self.assertEqual(len(pads), 1)
+        pad_top, pad_bottom = pads[0]
+        self.assertLess(max(pad_top, pad_bottom), 3.0)
+
 
 class FormulaBoundaryTests(unittest.TestCase):
     """What belongs inside a formula crop, and what stays readable text."""
